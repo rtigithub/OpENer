@@ -4,7 +4,7 @@
  *
  ******************************************************************************/
 
-/** @file generic_networkhandler.c
+/** @file generic_networkhandler.h
  *  @author Martin Melik Merkumians
  *  @brief This file includes all platform-independent functions of the network handler to reduce code duplication
  *
@@ -52,6 +52,8 @@ typedef struct {
   int tcp_listener; /**< TCP listener socket */
   int udp_unicast_listener; /**< UDP unicast listener socket */
   int udp_global_broadcast_listener; /**< UDP global network broadcast listener */
+  CipUdint ip_address; /**< IP being valid during NetworkHandlerInitialize() */
+  CipUdint network_mask; /**< network mask being valid during NetworkHandlerInitialize() */
   MilliSeconds elapsed_time;
 } NetworkStatus;
 
@@ -66,13 +68,6 @@ EipStatus NetworkHandlerInitialize(void);
 void CloseUdpSocket(int socket_handle);
 
 void CloseTcpSocket(int socket_handle);
-
-
-/** @brief Initializes the network handler, shall be implemented by a port-specific networkhandler
- *
- *  @return EipStatus, if initialization failed EipError is returned
- */
-EipStatus NetworkHandlerInitialize(void);
 
 EipStatus NetworkHandlerProcessOnce(void);
 

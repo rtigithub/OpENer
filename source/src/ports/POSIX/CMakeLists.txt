@@ -3,7 +3,7 @@ add_subdirectory(sample_application)
 set( PLATFORM_SPEC_SRC networkhandler.c opener_error.c networkconfig.c)
 
 #######################################
-# OpENer RT patch	              #
+# OpENer RT patch	                    #
 #######################################
 set( OpENer_RT OFF CACHE BOOL "Activate OpENer RT" )
 if(OpENer_RT)
@@ -23,7 +23,35 @@ opener_common_includes()
 opener_platform_support("INCLUDES")
 
 add_library( ${OpENer_PLATFORM}PLATFORM ${PLATFORM_SPEC_SRC})
+# Mark executables and/or libraries for installation
+
+if( OPENER_BUILD_SHARED_LIBS )
+  install(TARGETS ${OpENer_PLATFORM}PLATFORM
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+  install(DIRECTORY ${PORTS_SRC_DIR}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    USE_SOURCE_PERMISSIONS
+    FILES_MATCHING
+      PATTERN "*.h"
+      PATTERN "sample_application" EXCLUDE
+   )
+endif()
 
 add_executable(OpENer main.c)
+target_link_libraries( OpENer CIP Utils SAMPLE_APP ENET_ENCAP NVDATA PLATFORM_GENERIC ${OpENer_PLATFORM}PLATFORM ${PLATFORM_SPEC_LIBS} CIP rt cap pthread)
 
-target_link_libraries( OpENer CIP Utils SAMPLE_APP ENET_ENCAP PLATFORM_GENERIC ${OpENer_PLATFORM}PLATFORM ${PLATFORM_SPEC_LIBS} ${OpENer_ADD_CIP_OBJECTS} rt cap pthread)
+# Add additional CIP Objects
+string(COMPARE NOTEQUAL "${OpENer_ADD_CIP_OBJECTS}" "" OpENer_HAS_ADDITIONAL_OBJECT )
+if( OpENer_HAS_ADDITIONAL_OBJECT )
+  message(STATUS "Additional activated objects: ${OpENer_ADD_CIP_OBJECTS}")
+  string(REPLACE " " ";" OpENer_ADD_CIP_OBJECTS_LIST ${OpENer_ADD_CIP_OBJECTS} )
+  foreach(CIP_OBJECT IN LISTS OpENer_ADD_CIP_OBJECTS_LIST)
+    include_directories(${${CIP_OBJECT}_SOURCE_DIR})
+    target_link_libraries( OpENer ${CIP_OBJECT} )
+  endforeach()
+else()
+  message(STATUS "No additional activated objects")
+endif()

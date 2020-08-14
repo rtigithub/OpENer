@@ -10,6 +10,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "platform_network_includes.h"
+
 /** @file typedefs.h
    Do not use interface types for internal variables, such as "int i;", which is
    commonly used for loop counters or counting things.
@@ -52,14 +54,12 @@ typedef int32_t CipDint; /**< 32-bit signed integer */
 typedef float CipReal; /**< 32-bit IEEE 754 floating point */
 typedef double CipLreal; /**< 64-bit IEEE 754 floating point */
 
-#ifdef OPENER_SUPPORT_64BIT_DATATYPES
 typedef int64_t EipInt64; /**< 64-bit signed number */
 typedef uint64_t EipUint64; /**< 64-bit unsigned number */
 
 typedef int64_t CipLint; /**< 64-bit signed integer */
 typedef uint64_t CipUlint; /**< 64-bit unsigned integer */
 typedef uint64_t CipLword; /**< 64-bit bit string */
-#endif /* OPENER_SUPPORT_64BIT_DATATYPES */
 
 /** @brief Constant identifying if a socket descriptor is invalid
  */
@@ -79,7 +79,7 @@ typedef unsigned long long MicroSeconds;
    0 ..  success and there is no reply to send
    1 ... success and there is a reply to send
 
-   For both of these cases EIP_STATUS is the return type.
+   For both of these cases EipStatus is the return type.
 
    Other return type are:
    -- return pointer to thing, 0 if error (return type is "pointer to thing")

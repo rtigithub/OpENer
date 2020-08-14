@@ -13,7 +13,7 @@
 
 #include "generic_networkhandler.h"
 
-MicroSeconds getMicroSeconds() {
+MicroSeconds GetMicroSeconds() {
   LARGE_INTEGER performance_counter;
   LARGE_INTEGER performance_frequency;
 
@@ -25,7 +25,7 @@ MicroSeconds getMicroSeconds() {
 }
 
 MilliSeconds GetMilliSeconds(void) {
-  return (MilliSeconds) (getMicroSeconds() / 1000ULL);
+  return (MilliSeconds) (GetMicroSeconds() / 1000ULL);
 }
 
 EipStatus NetworkHandlerInitializePlatform(void) {
@@ -34,6 +34,11 @@ EipStatus NetworkHandlerInitializePlatform(void) {
   WSAStartup(wVersionRequested, &wsaData);
 
   return kEipStatusOk;
+}
+
+void ShutdownSocketPlatform(int socket_handle) {
+#pragma \
+  message "Untested. Is a shutdown() needed under Windows like for the POSIX port?"
 }
 
 void CloseSocketPlatform(int socket_handle) {

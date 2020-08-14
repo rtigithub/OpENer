@@ -7,7 +7,16 @@
 #######################################
 add_test_includes()
 
+
+#######################################
+# Add common includes                 #
+#######################################
 opener_common_includes()
+
+#######################################
+# Add platform-specific includes      #
+#######################################
+opener_platform_support("INCLUDES")
 
 ###################################################
 # Copy custom test output file to binary location #
@@ -31,6 +40,7 @@ target_link_libraries( OpENer_Tests UtilsTest Utils )
 target_link_libraries( OpENer_Tests EthernetEncapsulationTest ENET_ENCAP )
 target_link_libraries( OpENer_Tests CipTest CIP )
 target_link_libraries( OpENer_Tests PortsTest PLATFORM_GENERIC )
+target_link_libraries( OpENer_Tests NVDATA )
 
 ########################################
 # Adds test to CTest environment       #

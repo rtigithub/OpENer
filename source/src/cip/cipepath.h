@@ -161,7 +161,7 @@ typedef enum symbolic_segment_extended_format {
 
 /* Start - Often used types of EPaths */
 typedef struct connection_path_epath {
-  CipDword class_id;
+  CipDword class_id; /**< here in accordance with Vol. 1 C-1.4.2 */
   CipDword instance_id;
   CipDword attribute_id_or_connection_point;
 } CipConnectionPathEpath;
@@ -257,11 +257,11 @@ LogicalSegmentLogicalFormat GetPathLogicalSegmentLogicalFormat(
 void SetPathLogicalSegmentLogicalFormat(LogicalSegmentLogicalFormat format,
                                         CipOctet *const cip_path);
 
-const CipDword CipEpathGetLogicalValue(const EipUint8 **message);
+CipDword CipEpathGetLogicalValue(const EipUint8 **message);
 
-size_t CipEpathSetLogicalValue(const CipDword logical_value,
-                               const LogicalSegmentLogicalFormat logical_format,
-                               CipOctet **message);
+void CipEpathSetLogicalValue(const CipDword logical_value,
+                             const LogicalSegmentLogicalFormat logical_format,
+                             CipMessageRouterResponse *const message);
 
 /** @brief  Gets the Extended Logical Type of a Logical Segment EPath message
  *

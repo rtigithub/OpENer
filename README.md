@@ -3,8 +3,6 @@
        src="https://scan.coverity.com/projects/14200/badge.svg?flat=1"/>
 </a> 
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=OpENer&metric=alert_status)](https://sonarcloud.io/dashboard?id=OpENer)
-[![Stories in Ready](https://badge.waffle.io/EIPStackGroup/OpENer.svg?label=ready&title=Ready)](http://waffle.io/EIPStackGroup/OpENer)
-[![Stories in In Progress](https://badge.waffle.io/EIPStackGroup/OpENer.svg?label=in%20progress&title=In%20Progress)](http://waffle.io/EIPStackGroup/OpENer)
 [![Join the chat at https://gitter.im/EIPStackGroupOpENer/Lobby](https://badges.gitter.im/EIPStackGroupOpENer/Lobby.svg)](https://gitter.im/EIPStackGroupOpENer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
@@ -37,7 +35,8 @@ installed. You will need to have the following installed:
 * CMake
 * gcc
 * make
-* binutils 
+* binutils
+* the development library of libcap (libcap-dev or equivalient)
  
 for normal building. These should be installed on most Linux installations and
 are part of the development packages of Cygwin.
@@ -65,6 +64,9 @@ OpENer also now has a real-time capable POSIX startup via the OpENer_RT option, 
 If you want to use OpENer_RT, instead of step 2, the  ``sudo setcap cap_net_raw,cap_ipc_lock,cap_sys_nice+ep ./src/ports/POSIX/OpENer
 `` has to be run to grant OpENEr ``CAP_SYS_NICE``, ``CAP_IPC_LOCK``, and the ``CAP_NET_RAW`` capabilities, needed for the RT mode
 
+Shared library support has been added to CMakeLists file and is enabled by setting OPENER_BUILD_SHARED_LIBS=ON. It has only been tested under Linux/POSIX platform.
+
+
 Compile for Windows XP/7/8 via Visual Studio:
 ---------------------------------------------
 1. Invoke setup_windows.bat or configure via CMake
@@ -81,11 +83,13 @@ Compile for Windows XP/7/8 via Visual Studio:
 
 In order to get the correct interface index enter the command ``route print`` in a command promt and search for the MAC address of your chosen network interface at the beginning of the output. The leftmost number is the corresponding interface index.
 		
-Compile for Windows XP/7/8 via Cygwin:
+Compile for Windows XP/7/8/10 via Cygwin:
 --------------------------------------
-This should work like the procedure for Linux, with the exception, that RT mode will not work for Cygwin.
+The POSIX setup file can be reused for Cygwin. Please note, that you cannot use RT mode and you will have to remove the code responsible for checking and getting the needed capabilities, as libcap is not available in Cygwin. The easier and more supported way to build OpENer for Windows is to either use MinGW or Visual Studio.
 
-Compile for MinGW on Windows 10
+In order to run OpENer, it has to be run as privileged process, as it needs the rights to use raw sockets.
+
+Compile for MinGW on Windows XP/7/8/10
 -------------------------------
 1. Make sure 64 bit mingw is installed. (Test with gcc --version, should show x86_64-posix-seh-rev1)
 2. Make sure CMake is installed. (Test with cmake --version, should be version 3.xx)

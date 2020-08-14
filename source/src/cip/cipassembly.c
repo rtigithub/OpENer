@@ -19,10 +19,24 @@
  *  Currently only supports Attribute 3 (CIP_BYTE_ARRAY) of an Assembly
  */
 EipStatus SetAssemblyAttributeSingle(CipInstance *const instance,
-                                     CipMessageRouterRequest *const message_router_request,
+                                     const CipMessageRouterRequest *const message_router_request,
                                      CipMessageRouterResponse *const message_router_response,
-                                     struct sockaddr *originator_address,
+                                     const struct sockaddr *originator_address,
                                      const int encapsulation_session);
+
+static EipStatus AssemblyPreGetCallback
+(
+  CipInstance *const instance,
+  CipAttributeStruct *const attribute,
+  CipByte service
+);
+
+static EipStatus AssemblyPostSetCallback
+(
+  CipInstance *const instance,
+  CipAttributeStruct *const attribute,
+  CipByte service
+);
 
 /** @brief Constructor for the assembly object class
  *
@@ -31,7 +45,8 @@ EipStatus SetAssemblyAttributeSingle(CipInstance *const instance,
  */
 CipClass *CreateAssemblyClass(void) {
   /* create the CIP Assembly object with zero instances */
-  CipClass *assembly_class = CreateCipClass(kCipAssemblyClassCode, 0, /* # class attributes*/
+  CipClass *assembly_class = CreateCipClass(kCipAssemblyClassCode,
+                                            0, /* # class attributes*/
                                             7, /* # highest class attribute number*/
                                             1, /* # class services*/
                                             2, /* # instance attributes*/
@@ -50,6 +65,8 @@ CipClass *CreateAssemblyClass(void) {
                   kSetAttributeSingle,
                   &SetAssemblyAttributeSingle,
                   "SetAssemblyAttributeSingle");
+    InsertGetSetCallback(assembly_class, AssemblyPreGetCallback, kPreGetFunc);
+    InsertGetSetCallback(assembly_class, AssemblyPostSetCallback, kPostSetFunc);
   }
 
   return assembly_class;
@@ -63,12 +80,12 @@ EipStatus CipAssemblyInitialize(void) {
 }
 
 void ShutdownAssemblies(void) {
-  CipClass *assembly_class = GetCipClass(kCipAssemblyClassCode);
+  const CipClass *const assembly_class = GetCipClass(kCipAssemblyClassCode);
 
   if(NULL != assembly_class) {
-    CipInstance *instance = assembly_class->instances;
+    const CipInstance *instance = assembly_class->instances;
     while(NULL != instance) {
-      CipAttributeStruct *attribute = GetCipAttribute(instance, 3);
+      const CipAttributeStruct *const attribute = GetCipAttribute(instance, 3);
       if(NULL != attribute) {
         CipFree(attribute->data);
       }
@@ -89,7 +106,7 @@ CipInstance *CreateAssemblyObject(const EipUint32 instance_id,
     return NULL;
   }
 
-  CipInstance *const instance = AddCIPInstance(assembly_class, instance_id);  /* add instances (always succeeds (or asserts))*/
+  CipInstance *const instance = AddCipInstance(assembly_class, instance_id);  /* add instances (always succeeds (or asserts))*/
 
   CipByteArray *const assembly_byte_array = (CipByteArray *) CipCalloc(1,
                                                                        sizeof(
@@ -103,12 +120,14 @@ CipInstance *CreateAssemblyObject(const EipUint32 instance_id,
   InsertAttribute(instance,
                   3,
                   kCipByteArray,
+                  EncodeCipByteArray,
                   assembly_byte_array,
-                  kSetAndGetAble);
+                  kSetAndGetAble | kPreGetFunc | kPostSetFunc);
   /* Attribute 4 Number of bytes in Attribute 3 */
   InsertAttribute(instance,
                   4,
                   kCipUint,
+                  EncodeCipUint,
                   &(assembly_byte_array->length),
                   kGetableSingle);
 
@@ -120,7 +139,7 @@ EipStatus NotifyAssemblyConnectedDataReceived(CipInstance *const instance,
                                               const EipUint16 data_length) {
   /* empty path (path size = 0) need to be checked and taken care of in future */
   /* copy received data to Attribute 3 */
-  CipByteArray *assembly_byte_array =
+  const CipByteArray *const assembly_byte_array =
     (CipByteArray *) instance->attributes->data;
   if(assembly_byte_array->length != data_length) {
     OPENER_TRACE_ERR("wrong amount of data arrived for assembly object\n");
@@ -135,16 +154,15 @@ EipStatus NotifyAssemblyConnectedDataReceived(CipInstance *const instance,
 }
 
 EipStatus SetAssemblyAttributeSingle(CipInstance *const instance,
-                                     CipMessageRouterRequest *const message_router_request,
+                                     const CipMessageRouterRequest *const message_router_request,
                                      CipMessageRouterResponse *const message_router_response,
-                                     struct sockaddr *originator_address,
+                                     const struct sockaddr *originator_address,
                                      const int encapsulation_session) {
   OPENER_TRACE_INFO(" setAttribute %d\n",
                     message_router_request->request_path.attribute_number);
 
   const EipUint8 *const router_request_data = message_router_request->data;
 
-  message_router_response->data_length = 0;
   message_router_response->reply_service =
     (0x80 | message_router_request->service);
   message_router_response->general_status = kCipErrorAttributeNotSupported;
@@ -156,7 +174,7 @@ EipStatus SetAssemblyAttributeSingle(CipInstance *const instance,
   if( (attribute != NULL) &&
       (3 == message_router_request->request_path.attribute_number) ) {
     if(attribute->data != NULL) {
-      CipByteArray *data = (CipByteArray *) attribute->data;
+      const CipByteArray *const data = (CipByteArray *) attribute->data;
 
       /* TODO: check for ATTRIBUTE_SET/GETABLE MASK */
       if( true == IsConnectedOutputAssembly(instance->instance_number) ) {
@@ -177,6 +195,13 @@ EipStatus SetAssemblyAttributeSingle(CipInstance *const instance,
             message_router_response->general_status = kCipErrorTooMuchData;
           }
           else{
+            if ( (attribute->attribute_flags & kPreSetFunc)
+                 && instance->cip_class->PreSetCallback ) {
+              instance->cip_class->PreSetCallback(instance,
+                                                  attribute,
+                                                  message_router_request->service);
+            }
+
             memcpy(data->data, router_request_data, data->length);
 
             if(AfterAssemblyDataReceived(instance) != kEipStatusOk) {
@@ -210,4 +235,32 @@ EipStatus SetAssemblyAttributeSingle(CipInstance *const instance,
   }
 
   return kEipStatusOkSend;
+}
+
+static EipStatus AssemblyPreGetCallback
+(
+  CipInstance *const instance,
+  CipAttributeStruct *const attribute,
+  CipByte service
+) {
+  int rc;
+  (void) attribute; (void) service; /* no unused parameter warnings */
+
+  rc = BeforeAssemblyDataSend(instance);
+
+  return rc;
+}
+
+static EipStatus AssemblyPostSetCallback
+(
+  CipInstance *const instance,
+  CipAttributeStruct *const attribute,
+  CipByte service
+) {
+  int rc;
+  (void) attribute; (void) service; /* no unused parameter warnings */
+
+  rc = AfterAssemblyDataReceived(instance);
+
+  return rc;
 }

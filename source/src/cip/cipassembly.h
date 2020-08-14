@@ -9,8 +9,8 @@
 #include "typedefs.h"
 #include "ciptypes.h"
 
-/** @brief Assembly Class Code */
-static const int kCipAssemblyClassCode = 0x04;
+/** @brief Assembly class code */
+static const CipUint kCipAssemblyClassCode = 0x04U;
 
 /* public functions */
 
